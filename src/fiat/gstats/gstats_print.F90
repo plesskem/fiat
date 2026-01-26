@@ -968,9 +968,9 @@ WRITE(KULOUT,'(/A)')'===-=== END   OF TIMING STATISTICS ===-==='
 
 
 IF(LSTATS_MEM)THEN
-  IF(LXML_STATS)THEN
-    WRITE(IXMLLUN,'(A)')'<memory>'
-  ENDIF
+  !IF(LXML_STATS)THEN
+  !  WRITE(IXMLLUN,'(A)')'<memory>'
+  !ENDIF
   WRITE(KULOUT,*) ''
   WRITE(KULOUT,*) 'STATS FOR MEMORY'
   WRITE(KULOUT,*)  &
@@ -986,24 +986,24 @@ IF(LSTATS_MEM)THEN
       WRITE(KULOUT,'(I4,1X,A20,1X,I8,1X,I6,3(1X,I9))')&
        &JNUM,CCDESC(JNUM),ICALLS,INUM,IMEM,JMEM,NTMEM(JNUM,5)
 
-      IF(LXML_STATS)THEN
-        WRITE(IXMLLUN,'(A,I4,A,/,A,A20,A,/,A,I8,A,/,A,I6,A,/,3(A,I9,A,/))')&
-         &'<memitem id="',JNUM,'"/>',&
-         &'<description>',CCDESC(JNUM),'</description>',&
-         &'<calls>',ICALLS,'</calls>',&
-         &'<callnum>',INUM,'</callnum>','<maxincr unit="kb">',IMEM,'</maxincr>',&
-         &'<totincr unit="kb">',JMEM,'</totincr>',&
-         &'<minincr unit="kb">',NTMEM(JNUM,5),'</minincr>'
-      ENDIF
+      !IF(LXML_STATS)THEN
+      !  WRITE(IXMLLUN,'(A,I4,A,/,A,A20,A,/,A,I8,A,/,A,I6,A,/,3(A,I9,A,/))')&
+      !   &'<memitem id="',JNUM,'"/>',&
+      !   &'<description>',CCDESC(JNUM),'</description>',&
+      !   &'<calls>',ICALLS,'</calls>',&
+      !   &'<callnum>',INUM,'</callnum>','<maxincr unit="kb">',IMEM,'</maxincr>',&
+      !   &'<totincr unit="kb">',JMEM,'</totincr>',&
+      !   &'<minincr unit="kb">',NTMEM(JNUM,5),'</minincr>'
+      !ENDIF
     ENDIF
   ENDDO
 
   WRITE(KULOUT,*) ''
   WRITE(KULOUT,'(/A)')'===-=== END   OF MEMORY STATISTICS ===-==='
   WRITE(KULOUT,*) ''
-  IF(LXML_STATS)THEN
-    WRITE(IXMLLUN,'(A)')'</memory>'
-  ENDIF
+  !IF(LXML_STATS)THEN
+  !  WRITE(IXMLLUN,'(A)')'</memory>'
+  !ENDIF
 ENDIF
 IF(LXML_STATS .AND. MYPROC_STATS==1)THEN
   WRITE(IXMLLUN,'(A)')'</gstats>'
