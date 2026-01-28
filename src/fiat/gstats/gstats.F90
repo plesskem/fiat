@@ -353,12 +353,10 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
         NTMEM(KNUM,3) = NCALLS(KNUM) ! when max increase occurred
       ENDIF
       IF (IDMEM < NTMEM(KNUM,5)) NTMEM(KNUM,5) = IDMEM ! min increase in this region
-
-      If (IDMEM /= 0) THEN
-        WRITE(IMEMUN,'(A6,I5,1X,A20,7(1X,I8))') &
-             & "MEMORY ", KNUM, CCDESC(KNUM), IDMEM, IIMEM, IMEMH, IMEMS, IPAG - IIPAG, &
-             & NCALLS(KNUM) / 2, IIMEMC
-      ENDIF
+      WRITE(IMEMUN,'(A6,I5,1X,A20,7(1X,I8))') &
+            & "MEMORY ", KNUM, CCDESC(KNUM), IDMEM, IIMEM, IMEMH, IMEMS, IPAG - IIPAG, &
+            & NCALLS(KNUM) / 2, IIMEMC
+      
       CLOSE(IMEMUN)
     ENDIF
     ! Save counters that result in large delays
