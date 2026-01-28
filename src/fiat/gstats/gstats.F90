@@ -82,7 +82,7 @@ INTEGER(KIND=JPIM), INTENT(IN) :: KSWITCH
 
 INTEGER(KIND=JPIM) :: IMOD, ICALL
 INTEGER(KIND=JPIM) :: IIMEM, IIPAG, IIMEMC, IMEMUN
-INTEGER(KIND=JPIB) :: IMEM, IMEMH, IMEMS, IMEMC, IPAG, INUM
+INTEGER(KIND=JPIB) :: IMEM, IMEMH, IMEMS, IMEMC, IPAG, INUM, IDMEM
 INTEGER(KIND=JPIB) :: GETMAXRSS, GETHWM, GETSTK, GETCURHEAP, GETPAG
 EXTERNAL GETMAXRSS, GETHWM, GETSTK, GETCURHEAP, GETPAG
 REAL(KIND=JPRD) :: ZTIMED, ZCLOCK, ZCLOCK1, ZTIME, ZTCPU, ZVCPU
@@ -152,7 +152,7 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
     TIMESUM(:) = 0.0_JPRD
     NCALLS(:) = 0
   ENDIF
-
+  IDMEM=0
   IF (LHOOK .AND. (KSWITCH == 0 .OR. KSWITCH == 1)) THEN
     IF (CCTYPE(KNUM) .EQ. "TRS") THEN
       CALL DR_HOOK(CCDESC_DRHOOK(KNUM), KSWITCH, ZHOOK_HANDLE_TRANS)
@@ -264,7 +264,6 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
     THISTCPU(KNUM) = 0.0_JPRD
     THISVCPU(KNUM) = 0.0_JPRD
     IF (MYPROC_STATS .LE. NSTATS_MEM .AND. MYPROC_STATS .NE. 0) THEN
-      OPEN (UNIT=IMEMUN, FILE=FNAME, STATUS='unknown', POSITION='append', ACTION='write')          
       IMEM = GETMAXRSS() / 1024
       IPAG = GETPAG()
       IMEMH = GETHWM() / 1024
@@ -273,13 +272,14 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
       IF (LSTATS_ALLOC) IMEMC = GETCURHEAP() / 1024
       IF (IMEM > IIMEM .OR. IPAG > IIPAG .OR. (LSTATS_ALLOC .AND. (IMEMC .NE. IIMEMC))) THEN
         IF (LLMFIRST) THEN
+          OPEN (UNIT=IMEMUN, FILE=FNAME, STATUS='unknown', POSITION='append', ACTION='write')          
           WRITE(IMEMUN,*) ".---------------------------------------------------------"
           WRITE(IMEMUN,*) "| Memory trace details"
           WRITE(IMEMUN,*) "| --------------------"
           WRITE(IMEMUN,*) "| Memory examined at each GSTATS call if NSTATS_MEM>IMEMUN."
           WRITE(IMEMUN,*) "| Header for each trace line is:"    
           WRITE(IMEMUN,*) "|"
-          WRITE(IMEMUN,*) "|   RSS_INC: Increase in RSS_MAX (KB)"
+          WRITE(IMEMUN,*) "|   RSS_INC: Increase in RSS_MAX (KB) during the GSTATS Region"
           WRITE(IMEMUN,*) "|   RSS_MAX: Maximum real working set so far (KB)"
           WRITE(IMEMUN,*) "|   HEAP_MX: High Water Mark for heap so far (KB)"
           WRITE(IMEMUN,*) "|   STK:     Current Stack usage (KB)"
@@ -296,16 +296,17 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
            & "MEMORY    "," KNUM","RSS_INC"," RSS_MAX"," HEAP_MX","    STK", &
            & "  PGS"," CALL","    HEAP"
           LLMFIRST = .FALSE.
+          CLOSE(IMEMUN)
         ENDIF
-        WRITE(IMEMUN,'(A10,I5,1X,A20,1X,I6,2(1X,I7),1X,I6,1X,I4,1X,I4,1X,I7)') &
-             & "MEMORY sw0", KNUM, CCDESC(KNUM), IMEM - IIMEM, IMEM, IMEMH, IMEMS, IPAG - IIPAG, &
-             & (NCALLS(KNUM) + 1) / 2, IMEMC
+       ! WRITE(IMEMUN,'(A10,I5,1X,A20,1X,I6,2(1X,I7),1X,I6,1X,I4,1X,I4,1X,I7)') &
+       !      & "MEMORY sw0", KNUM, CCDESC(KNUM), IMEM - IIMEM, IMEM, IMEMH, IMEMS, IPAG - IIPAG, &
+       !      & (NCALLS(KNUM) + 1) / 2, IMEMC
+    
       ENDIF
       NTMEM(KNUM,2) = IMEM
       IIMEM = IMEM
       IIPAG = IPAG
       IIMEMC = IMEMC
-      CLOSE(IMEMUN)
     ENDIF
     IF (LSTATS_MPL .AND. CCTYPE(KNUM) .EQ. 'MPL') THEN
       CALL MPL_STATSON(NSEND, SBYTES, NRECV, RBYTES)
@@ -331,27 +332,33 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
     TVCPUSUM(KNUM) = TVCPUSUM(KNUM) + THISVCPU(KNUM) + ZVCPU - TVCPULCALL(KNUM)
     IF (MYPROC_STATS .LE. NSTATS_MEM .AND. MYPROC_STATS .NE. 0) THEN
       OPEN (UNIT=IMEMUN, FILE=FNAME, ACTION='write',STATUS='unknown', POSITION='append')
-      IMEM = GETMAXRSS() / 1024
+      IMEM = GETMAXRSS() / 1024 ! current rss snapshot
       IPAG = GETPAG()
       IMEMH = GETHWM() / 1024
       IMEMS = GETSTK() / 1024
       IMEMC = 0
       IF (LSTATS_ALLOC) IMEMC = GETCURHEAP() / 1024
-      IF (IMEM > IIMEM .OR. IPAG > IIPAG .OR. (LSTATS_ALLOC .AND. (IMEMC .NE. IIMEMC))) THEN
-        WRITE(IMEMUN,'(A10,I5,1X,A20,1X,I6,2(1X,I7),1X,I6,1X,I4,1X,I4,1X,I7)') &
-             & "MEMORY sw1 ", KNUM, CCDESC(KNUM), IMEM - IIMEM, IMEM, IMEMH, IMEMS, IPAG - IIPAG, &
-             & NCALLS(KNUM) / 2, IMEMC
-      ENDIF
-      IIMEM = IMEM
+      !IF (IMEM > IIMEM .OR. IPAG > IIPAG .OR. (LSTATS_ALLOC .AND. (IMEMC .NE. IIMEMC))) THEN
+      !  WRITE(IMEMUN,'(A10,I5,1X,A20,1X,I6,2(1X,I7),1X,I6,1X,I4,1X,I4,1X,I7)') &
+       !      & "MEMORY sw1 ", KNUM, CCDESC(KNUM), IMEM - IIMEM, IMEM, IMEMH, IMEMS, IPAG - IIPAG, &
+       !      & NCALLS(KNUM) / 2, IMEMC
+      !ENDIF
+      IIMEM = IMEM ! update saved values
       IIPAG = IPAG
       IIMEMC = IMEMC
-      IMEM = IMEM - NTMEM(KNUM, 2)
-      NTMEM(KNUM,4) = NTMEM(KNUM, 4) + IMEM
-      IF (IMEM > NTMEM(KNUM,1)) THEN
-        NTMEM(KNUM,1) = IMEM
-        NTMEM(KNUM,3) = NCALLS(KNUM)
+      IDMEM = IMEM - NTMEM(KNUM, 2) ! memory increase during this gstats region
+      NTMEM(KNUM,4) = NTMEM(KNUM, 4) + IDMEM ! total increase in this region so far
+      IF (IDMEM > NTMEM(KNUM,1)) THEN
+        NTMEM(KNUM,1) = IDMEM ! max increase in this region
+        NTMEM(KNUM,3) = NCALLS(KNUM) ! when max increase occurred
       ENDIF
-      IF (IMEM < NTMEM(KNUM,5)) NTMEM(KNUM,5) = IMEM
+      IF (IDMEM < NTMEM(KNUM,5)) NTMEM(KNUM,5) = IDMEM ! min increase in this region
+
+      If (IDMEM /= 0) THEN
+        WRITE(IMEMUN,'(A6,I5,1X,A20,7(1X,I8))') &
+             & "MEMORY ", KNUM, CCDESC(KNUM), IDMEM, IIMEM, IMEMH, IMEMS, IPAG - IIPAG, &
+             & NCALLS(KNUM) / 2, IIMEMC
+      ENDIF
       CLOSE(IMEMUN)
     ENDIF
     ! Save counters that result in large delays
