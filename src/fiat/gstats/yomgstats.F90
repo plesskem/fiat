@@ -27,13 +27,16 @@ PRIVATE :: JPRD, JPIM
 ! LSTATSCPU - TRUE for gathering CPU timing  statistics
 ! LSYNCSTATS - TRUE for syncronization (call to barrier) at the 
 !              start of timing event
-! LDETAILED_STATS - TRUE for more detail in output
+! LDETAILED_STATS - TRUE for more detail in output per rank
 ! LXML_STATS - TRUE for stats output in XML
 ! LSTATS_OMP - TRUE for gathering timing statistics on OpenMP regions
 !                 1001-1999
 ! LSTATS_COMMS - TRUE for gathering detailed timing of Message passing
 !                 501-1000
 ! LSTATS_MPL   - TRUE for gathering detailed info on message passing
+! LSTATS_MEM   - TRUE for gathering memory usage summary at the end
+! LSTATS_ALLOC - TRUE for gathering memory allocation/deallocation trace into csv files
+! NSTATS_MEM - number of ranks for which memory stats are collected
 ! NTRACE_STATS    - max number of entries in trace
 ! LTRACE_STATS    - True for trace of all calls to gstats
 ! LGSTATS_LABEL   - True after GSTATS-labels have been set
