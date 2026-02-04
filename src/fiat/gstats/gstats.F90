@@ -342,6 +342,7 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
 
   ! Memory Stats
   IF (LSTATS_MEM .AND. MYPROC_STATS .LE. NSTATS_MEM) THEN
+    WRITE(0,*) "MEM STATS KNUM=", KNUM, " KSWITCH=", KSWITCH, "SECTION=", CCDESC(KNUM), "IIMEM=", IIMEM
     ! get current memory state
     IMEM = GETMAXRSS() / 1024
     IPAG = GETPAG()
@@ -351,20 +352,23 @@ IF (LSTATS .AND. OML_MY_THREAD() == 1) THEN
     IF (LSTATS_ALLOC) IMEMC = GETCURHEAP() / 1024
     IF(KSWITCH .EQ. 0 .OR. KSWITCH .EQ. 3) THEN ! at entry or resume, save current memory
       IDMEM = IMEM - IIMEM ! memory increase since last saved values
+      ICALL = (NCALLS(KNUM) + 1) / 2
     ELSE
       IDMEM = IMEM - NTMEM(KNUM,2) ! memory increase during this gstats region
+      ICALL = NCALLS(KNUM) / 2
     ENDIF
       ! write memory trace line into csv
-    IF(LSTATS_ALLOC .AND. IDMEM .NE. 0) THEN
+    !.AND. IDMEM .NE. 0
+    IF(LSTATS_ALLOC) THEN
       OPEN (UNIT=IMEMUN, FILE=FNAME, STATUS='unknown', POSITION='append', ACTION='write')          
       IF (LLMFIRST) THEN ! write header
-        WRITE(IMEMUN,'(A)') "TIMESTAMP, TIMECLOCK, SWITCH, GSTATS ID, SECTION, RSS_INC, RSS_MAX, HEAP_MAX, STACK, PAGES, CALL, HEAP"
+        WRITE(IMEMUN,'(A)') "TIMESTAMP,TIMECLOCK,SWITCH,GSTATS ID,SECTION,RSS_INC,RSS_MAX,HEAP_MAX,STACK,PAGES,CALL,HEAP"
         LLMFIRST = .FALSE.
       ENDIF
       WRITE(IMEMUN,'(A,":",A,":",A, ",", F11.3, ",", I7, "," , I7, "," , A40, ",", I7, ",", I7, ",", I7, ",", I7, ",", I4, ",", I4, ",", I7)') &
             & CMEM_TIMESTAMP(1:2),CMEM_TIMESTAMP(3:4),CMEM_TIMESTAMP(5:6),&
-            & TIMELCALL(KNUM), KSWITCH, KNUM, CCDESC(KNUM), IDMEM, IMEM, IMEMH,&
-            & IMEMS, IPAG - IIPAG, (NCALLS(KNUM) + 1) / 2, IMEMC
+            & ZCLOCK, KSWITCH, KNUM, CCDESC(KNUM), IDMEM, IMEM, IMEMH,&
+            & IMEMS, IPAG - IIPAG, ICALL, IMEMC
       CLOSE(IMEMUN)
     ENDIF
     ! update saved values
